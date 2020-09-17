@@ -1,36 +1,3 @@
-install.packages("git2r")
-
-library(git2r)
-
-
-
-
-
-# test 
-2+2
-
-set.seed(123)
-install.packages("knitr")
-install.packages("sjSDM")
-install.packages("jSDM")
-library(knitr)
-library(sjSDM)
-library(jSDM)
-
-
-knitr::opts_chunk$set(fig.width=7, fig.height=4.5, fig.align='center', warning=FALSE, message=FALSE, cache = F)
-
-install_sjSDM()
-vignette("Dependencies", package = "sjSDM")
-
-
-com = simulate_SDM(env = 3L, species = 5L, sites = 100L)
-
-model = sjSDM(Y = com$response, env = com$env_weights, iter = 100L, se=TRUE)
-
-
-
-
 
 # JAGs Code ---------------------------------------------------------------
 
@@ -52,8 +19,16 @@ install.packages("useful")
 install.packages("DHARMa")
 install.packages("MVN")
 #install.packages("R2OpenBUGS")
+install.packages("corpcor")
 
-2+2
+
+
+
+# Start RUN_CODE ----------------------------------------------------------
+
+
+
+library(corpcor)
 library(nlme)
 library(MVN)
 library(DHARMa)
@@ -75,18 +50,31 @@ library(R2jags)
 library(mvtnorm)
 #library(R2OpenBUGS)
 
-2+2
-?rjags
 
-# change function
+# <____________ change function
+# <____________ dist.matrix <- function(side)
+# <____________ {
+# <____________  row.coords <- rep(1:side, times=side)
+# <____________  col.coords <- rep(1:side, each=side)
+# <____________  row.col <<- data.frame(row.coords, col.coords)
+# <____________  D <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
+# <____________  D <- as.matrix(D)
+# <____________  return(D) #  <___________list(D=D, coords = row.col)
+# <____________ }
+
+row <- row.coords <- rep(1:side, times=side)
+col <- col.coords <- rep(1:side, each=side)
+row.col <<- data.frame(row, col)
+D1 <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
+D <- as.matrix(D1)
+
+#dist.matrix <- function(list(D=D, coords = row.col))
 dist.matrix <- function(side)
-{
-  row.coords <- rep(1:side, times=side)
-  col.coords <- rep(1:side, each=side)
-  row.col <<- data.frame(row.coords, col.coords)
-  D <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
-  D <- as.matrix(D)
-  return(D) # list(D=D, coords = row.col)
+{row.coords=row.coords
+col.coords=col.coords
+row.col=row.col
+D=D
+return(D)
 }
 
 
@@ -105,6 +93,9 @@ cor.surface <- function(side, global.mu, lambda)
 
 
 
+
+
+
 # parameters (the truth) that I will want to recover by JAGS
 side = 10
 global.mu = 0
@@ -113,9 +104,9 @@ lambda = 0.2  # let's try something new
 # simulating the main raster that I will analyze as data
 M <- cor.surface(side = side, lambda = lambda, global.mu = global.mu)
 image(M)
-
-
 mean(M)
+
+
 
 # simulating the inherent uncertainty of the mean of M: 
 test = replicate(1000, mean(cor.surface(side = side, lambda = lambda, global.mu = global.mu)))
@@ -125,6 +116,10 @@ sd(test)
 
 jag1 <- as.vector(as.matrix(M))
 my.data <- list(N = side * side, D = dist.matrix(side), y = jag1)
+
+
+
+
 
 
 
@@ -177,70 +172,23 @@ pairs(as.matrix(as.mcmc(fit)))
 
 
 
-# 13.09 glmmTMB -----------------------------------------------------------
 
+
+
+# 13.09 glmmTMB -----------------------------------------------------------
 
 # glmmTMB time variable  --------------------------------------------------
 
-
-my.data
-# liefert mir 1 Wert für Y von 1:100, ergo nehme ich Time als 2. variable von 1:100 oder so siehe
-# https://cran.r-project.org/web/packages/glmmTMB/vignettes/covstruct.html
-
-my.data
 n= 100
-times <- factor(1:n, levels=1:n)
-group <- factor(rep(1,n))
-View(my.data)
-
-dat0 <- data.frame(my.data,times,group)
-dat1 <- data.frame(my.data$y,times,group)
-
-
-View(dat0)
-str(dat0)
-?glmmTMB
-
-glm1 <- glmmTMB(my.data$y ~ ar1(times + 0 | group), data=dat0)
 glm1 <- glmmTMB(my.data$y ~ ar1(times + 0 | group), data=dat0)
 ?glmmTMB
-
-dat0
-# ---- glm2 <- glmmTMB(y ~ ar1(times + 0 | group), data=dat0)
-# ---- glm1 <- glmmTMB(my.data.y ~times, data = dat0) # crazy error
-summary(glm1)
-plot(glm1)    # Error: 'x' is a list, but does not have components 'x' and 'y'
-p <- plot(y, times)
-
-plot(glm1$y, glm1$times) # des functioniert jetzt leider wiederum nicht.. 
-
-# --------   plot (glm$your.x.coordinate, glm$your.y.coordinate)   # Maybe a hint or solution pathway
-my.dat1 <- 
-  res1 <- simulateResiduals(glm1)
-plot(res1)
-
-
 # Spatial correlations ----------------------------------------------------
 
-# Matern
-fit.mat <- glmmTMB(my.data$y ~ mat(times + 0 | group), data=dat0, dispformula=~0)
-VarCorr(fit.mat)
-plot(fit.mat)
-
-# Gaussian
-fit.gau <- glmmTMB(my.data.y ~ gau(times + 0 | group), data=dat0, dispformula=~0)
-VarCorr(fit.gau)
-plot(fit.gau)
-?plot
-
-# Exponential
-
-#### Max:
 data = data.frame(resp=my.data$y)
-data$pos <- numFactor(row.col$row.coords, row.col$col.coords)
+data$pos <- numFactor(row.col, row.coords)
 data$group <- factor(rep(1, nrow(data)))
-data$x = row.col$row.coords
-data$y = row.col$col.coords
+data$x = row.coords
+data$y = col.coords
 
 
 fit.exp <- glmmTMB(resp ~ 1 + exp(pos + 0 | group), data=data)
@@ -249,15 +197,16 @@ summary(fit.exp)
 ### from the glmmTMB source:
 ### exp( -dist(i,j) * exp(-theta(1)) ) );
 ### which means that to get our lambda parametrization we have to calculate: exp(-theta)
-res1 <- simulateResiduals(fit.exp)
-plot(res1)
-fit$par
+# <____________ res1 <- simulateResiduals(fit.exp)
+# <____________ plot(res1)
+# <____________ fit$par
 
 exp(-fit.exp$fit$par[4]) # original
 exp(-fit.exp$fit$par[3]) # auch theta
+fit.exp$fit$par#[3]
 lambda
 global.mu
-
+?par
 
 #
 #
@@ -266,37 +215,40 @@ global.mu
 #
 
 # 13.09 nmle --------------------------------------------------------------
-View(my.data)
-str(my.data)
 
 data.1 <- data.frame(my.data$y)
 id = rep(letters[1:20],5)
-id
 lm1 <- lme(y ~ 1, random=~ 1 | id, correlation=corExp(form=~1|id), data = my.data)
 summary(lm1)
-plot(lm1)
 my.data$group = as.factor(rep(1, my.data$N))
+my.data$rows = row.col[,1]
+my.data$cols = row.col[,2]
 
-lm2 <- lme(y ~ 1, random=~ 1 | group, correlation=corExp(form=~id+0|group), data = my.data)
-lm2 <- lme(y ~ 1, random=~ 1 | group , correlation=corExp(form=~id+0|group), data = my.data)
-
+# <____________ lm2 <- lme(y ~ 1, random=~ 1 | group, correlation=corExp(form=~rows+cols), data = my.data)
+lm3 <- gls(y ~ 1, correlation=corExp(form=~rows+cols), data = my.data)
+lm3
+# <____________ lm2
+# <____________ intervals(lm3)
+# <____________ summary(lm3)$intervals
+# <____________ log(0.2)
+range <- coef(gls$modelStruct$corStruct, unconstrained = F)
+l = 1 /range           # r = range # ich depp .... 
+d <- l
+gls.lambda <- exp(-range*D)
+gls.lambda
 
 #
 #
 #
 #
-
-length(my.data$y)
-dummy <- rep(1, 100) 
-spdata <- cbind(my.data$y, dummy) 
-lme1 <- lme(y ~ 1, data = my.data, random = ~ 1 | dummy, method = "ML") 
-summary(lme1)
-?lme
-lme2 <- update(lme1, correlation = corGaus(1, form = ~ dummy + 0), method = "ML")
-summary(lme2)
-
-
-
+# <____________ length(my.data$y)
+# <____________ dummy <- rep(1, 100) 
+# <____________ spdata <- cbind(my.data$y, dummy) 
+# <____________ lme1 <- lme(y ~ 1, data = my.data, random = ~ 1 | dummy, method = "ML") 
+# <____________ summary(lme1)
+# <____________ ?lme
+# <____________ lme2 <- update(lme1, correlation = corGaus(1, form = ~ dummy + 0), method = "ML")
+# <____________ summary(lme2)
 #
 #
 #
@@ -304,316 +256,214 @@ summary(lme2)
 #
 #  Eigene Likelihood Function MVN -----------------------------------------
 
-?MVN
-# bau dir eine eigene Likelihood Funktion mit MVN und optimiere die mit optim, 
-# und schau auch wieder dass sie den richtigen Parameter fitten
-str(my.data)
-?mvn
-mvn.data <- as.matrix(my.data$D[,1:100],my.data$N,my.data$y)
-mvn.data1 <- as.matrix(my.data$D[1:100,],my.data$N,my.data$y)
-
-mvn.data # not all Arguments have the same lenght!!
-mvn.data1
-result = mvn(data = mvn.data,  mvnTest = "hz")
-result1 = mvn(data = mvn.data1, univariatePlot = "qq" , multivariatePlot = "none",  mvnTest = "hz")
-result1
-
-result1 = mvn(data = mvn.data1,  mvnTest = "mardia") # Mardias´s test
-result2 = mvn(data = mvn.data1,  mvnTest = "hz") # henze-Zirkler
-result3 = mvn(data = mvn.data1,  mvnTest = "royston") # royston´s test
-result4 = mvn(data = mvn.data1,  mvnTest = "dh") # Doornik-Hansen's test
-result5 = mvn(data = mvn.data1,  mvnTest = "energy") # E statistik
-
-# all seem to have the same Values ... so what is the diffrence and why is there no difference ? 
-
-#---------
-corlik <- function(x) {
-  
-  res <- 0
-  if(x >= -1 & x <= 1) res = 1 
-  
-  return(log(res))
-  
-}
-#----------
-varlik <- function(x) {
-  
-  res <- 0
-  if(x > 0) res = 1
-  
-  return(log(res))
-  
-}
-#--------
-#
-#
-# 
-ll = function(par) {
-  cov = solve(exp(-par[1]*D))
-  mvtnorm::dmvnorm(my.data$y, mean = rep(par[2], 100), sigma = cov,log = TRUE)
-}
-result <- optim(par = c(0.1,10), fn = ll, gr = NULL, method = "SANN", hessian = FALSE)
-
-
-
 # zweiter Versuch MLE von MVN zu laufen -----------------------------------
-install.packages("corpcor")
-library(corpcor)
 # "solve", "qr.solve", "pseudoinverse"
 #y <- -mvtnorm::dmvnorm(my.data$y, mean = rep(par[2], 100), sigma = cov,log = TRUE) 
 
-
+set.seed=26
 ll = function(par) {
   cov = (exp(-par[1]* my.data$D))
   -mvtnorm::dmvnorm(my.data$y, mean = rep(par[2], 100), sigma = cov,log = TRUE)
 }
 methods = c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN","Brent")
 result <- optim(par = c(0.5,10),  fn = ll, gr = NULL, method = methods[1], hessian = FALSE)
-result$par
-
-?optim
+result
 
 res = sapply(seq(0.05, 1, by = 0.01),function(i) ll(c(i, 0.0)))
 plot(1:96, res)
+result$par[1]
 
-ll(c(0.01, 0.0))
-ll(c(0.3, 0.0))
-ll(c(5.8, 0.0))
+# <____________ min(res) # 57.61983 = 0.16 best score
+# <____________ optim.minimizer(res)
+# <____________ optim.minimum(res)   
+# <____________ print(res$minimum)
+# <____________ result
+# <____________ sapply(seq(0.05, 1, by = 0.01),function(i) ll(c(i, 0.0)))
 
-cov = (exp(-5.8* my.data$D))
 
-# > y[1:N] ~ dmnorm(mu[], D.tau[,])
-#
-# > saveRDS(my.data, "test.RDS")
-# > ttt = readRDS("test.RDS")
-#
-#
-#
+# <____________ cov = (exp(-5.8* my.data$D))
+# <____________ cov
 
-#------- For Loop Strucutre, Jags, nmle, glmmTMB (50 times) -------------
 
-loopvec <- c(10,20,30,40,50,60)
-loop50 <- matrix( 1:50)
-for(loopitem in loopvec){
-  print(loopitem)
+
+
+
+#------- For Loop Strucutre, Jags, nmle, glmmTMB (50 times) ---------------
+
+#--------------------------------------------------------------------------
+
+# Loop structur -----------------------------------------------------------
+
+# runtime
+## 
+for....{
+  time_gls = system.time(
+    {
+      b = 5*3
+      gls_model = gls(...)
+      
+    }
+  )
+  
+  time_glmmTMB = system.time(
+    {
+      b = 5*3
+      glmmTMBs_model = gls(...)
+      
+    }
+  )
+  time[3]
+  b
+}
+# time, lambda(theta, range), intercept
+# glmmTMB, gls, optim
+
+
+# 10 sites, 3 ziel values
+-------------------------------------------------------------------
+  # <____________   result_glmmTMB = matrix(NA, 10, 3)
+  # <____________ for(i in 1:10){
+  # <____________   time_glmmTMB = 
+  # <____________     system.time({
+  # <____________      m1 = glmmTMB(y~1, data = my.data)
+  # <____________     })
+  # <____________   result_glmmTMB[i, 1] = time_glmmTMB[3]
+  # <____________   result_glmmTMB[i, 2] = summary(m1)$coefficients$cond[1]
+  # <____________  }
+  # <____________  b
+  ------------------------------------------------------------------
+  2+2 
+# LOOP__GlmmTMB -----------------------------------------------------------
+result_glmmTMB = matrix(NA, 10, 3)
+for(i in 1:10){
+  time_glmmTMB = 
+    system.time({
+      fit.exp <- glmmTMB(resp ~ 1 + exp(pos + 0 | group), data=data)
+    })
+  result_glmmTMB[i, 1] = time_glmmTMB[3]                       # Time
+  result_glmmTMB[i, 2] = exp(-fit.exp$fit$par[4])              #lambda/theta?
+  result_glmmTMB[i, 3] = summary(fit.exp)$coefficients$cond[1] # Intercept
+  
 }
 
-#    #1 = fit.exp (glmmTMB)
-#    #2 = lm1     (nmle)
-#    #3 = fit     (JAGs)
-fit.exp
-lm1
-fit
+result_glmmTMB
 
-my.loop <- for (lambda in fit){
-  print(lambda)
+# Loop__GLS ---------------------------------------------------------------
+
+result_gls = matrix(NA, 10, 3)
+for(i in 1:10){
+  time_gls = 
+    system.time({
+      gls <- gls(y ~ 1, correlation=corExp (form=~rows+cols), data = my.data)
+    })
+  result_gls[i, 1] = time_gls[3]                                            # Time
+  result_gls[i, 2] = 1/coef(gls$modelStruct$corStruct, unconstrained = F)   #lambda/theta?
+  result_gls[i, 3] = summary(gls)$coefficients                              # Intercept
+}
+result_gls
+
+# <____________ range = 2.541579 
+# <____________ ?update_labels
+
+# Loop__OPTIM -------------------------------------------------------------
+
+
+result_optim = matrix(NA, 10, 3)
+for(i in 1:10){
+  time_optim = 
+    system.time({
+      ll = function(par) {
+        cov = (exp(-par[1]* my.data$D))
+        -mvtnorm::dmvnorm(my.data$y, mean = rep(par[2], 100), sigma = cov ,log = TRUE)
+      }
+      result <- optim(par = c(0.5,10),  fn = ll, gr = NULL, method = methods[1], hessian = FALSE)
+    })
+  result_optim[i, 1] = time_optim[3]        # Time
+  result_optim[i, 2] = result$value         # niedrigster Score...
+  result_optim[i, 3] = result$par[1]                          # Intercept
+}
+result_optim
+
+
+# Loop__In__Loop_Structure with lambda ------------------------------------
+# <____________ lambda
+# <____________ h = 0
+
+lambda.result = matrix(NA,50,2)
+for (h in 1:50){
+  time_glmmTMB = 
+    system.time({
+      lambda[h] =0.15+h*0.05
+      l.r <- lambda[h]
+    #  n.lambda = ceiling(lambda[h])
+    })
+  lambda.result[h, 1] <- lambda[h]
+  lambda.result[h, 2] <- l.r
 }
 
+lambda.result
 
 
-my.loop <- for (lambda in lm1){
-  print(lambda[lm1])
-  print(j)
-  print(k)
+# Loop__in__Loop_Combination__Model ---------------------------------------
+
+
+lambda.result = matrix(NA,5,11)
+for (h in 1:5 ){
+  time_glmmTMB = 
+    system.time({
+      lambda[h] =0.15+h*0.05
+      l.r <- lambda[h]
+
+      for(i in 1:5){
+        time_glmmTMB = 
+          system.time({
+            fit.exp <- glmmTMB(resp ~ 1 + exp(pos + 0 | group), data=data)
+          })
+        result_glmmTMB[i, 1] = time_glmmTMB[3]                       # Time
+        result_glmmTMB[i, 2] = exp(-fit.exp$fit$par[4])              #lambda/theta?
+        result_glmmTMB[i, 3] = summary(fit.exp)$coefficients$cond[1] # Intercept
+       
+      }
+      for(i in 1:10){
+        time_gls = 
+          system.time({
+            gls <- gls(y ~ 1, correlation=corExp (form=~rows+cols), data = my.data)
+          })
+        result_gls[i, 1] = time_gls[3]                                            # Time
+        result_gls[i, 2] = 1/coef(gls$modelStruct$corStruct, unconstrained = F)   #lambda/theta?
+        result_gls[i, 3] = summary(gls)$coefficients                              # Intercept
+      }
+      for(i in 1:10){
+        time_optim = 
+          system.time({
+            ll = function(par) {
+              cov = (exp(-par[1]* my.data$D))
+              -mvtnorm::dmvnorm(my.data$y, mean = rep(par[2], 100), sigma = cov ,log = TRUE)
+            }
+            result <- optim(par = c(0.5,10),  fn = ll, gr = NULL, method = methods[1], hessian = FALSE)
+          })
+        result_optim[i, 1] = time_optim[3]        # Time
+        result_optim[i, 2] = result$value         # niedrigster Score...
+        result_optim[i, 3] = result$par[1]                          # Intercept
+      }
+    })
+  lambda.result[h, 1] <- lambda[h]
+  lambda.result[h, 2] <- l.r
+  
+    lambda.result[h, 3] <- time_glmmTMB[3] 
+    lambda.result[h, 4] <- exp(-fit.exp$fit$par[4])
+    lambda.result[h, 5] <- summary(fit.exp)$coefficients$cond[1]
+    
+       lambda.result[h, 6] <- time_gls[3]
+       lambda.result[h, 7] <- 1/coef(gls$modelStruct$corStruct, unconstrained = F)
+       lambda.result[h, 8] <- summary(gls)$coefficients
+       
+           lambda.result[h, 9]  <- time_optim[3]
+           lambda.result[h, 10] <- result$value 
+           lambda.result[h, 11] <- result$par[1]
+
 }
 
-
-
-
-
-
-my.loop <- for(row in 1:50(fit.exp,lm1,)){
-  print(row)
-}
-
-
-
-
-# --------------OLD STUFF, USELESS or not working but still a backup---------------
-
-# another try to fit glmmTMB ----------------------------------------------
-
-str(my.data)
-fit1 <- glmmTMB(y ~ 1, data = my.data)
-fit1
-
-?glmmTMB
-
-n = 10000 
-times <- factor(1:n, levels=1:n)
-levels(times)
-
-group <- factor(rep(1,n))
-dat0 <- data.frame(y, times, group)
-dat1 <- data.frame(my.data, times, group)
-
-f1 <- glmmTMB(y ~ ar1(times + 0 | group), data = dat1) #ar = fit autregressive time series model to the data
-summary(f1)
-
-f2 <- glmmTMB(y ~ 1, data = dat1)
-summary(f2)
-
-
-
-
-.
-
-
-
-# LET´s try to fit an lme Function # Versuch.6  ---------------------------------------
-# --------------------------------- TIPP von MAX:---------------lme(y~1., data=data.frame(y=my.data$y))
-
-# fm0 <- lme(y ~ 1 , data = data.frame (y = my.data$y))
-
-fl1 <- lme(y ~ 1 , correlation = corGaus ,  data=data.frame(y=my.data$y))
-
-
-?corGaus
-?closure
-?lme
-
-
-
-fm1 <- lmList(y ~ 1 | group, data = my.data)
-fm2 <- lme(fm1)
-
-#
-
-
-fm2 <- lmList(y ~ 1 , my.data)
-fm3 <- lmList(y ~ 1 | group, random = 1, data = my.data)
-fm4 <- lmList(my.data$y)
-
-fm2 <- lme(fm1)
-summary(fm1)
-plot(fm1)
-?lme
-?lmList
-# JUHU!!! erster PLOT :D 
-
-fm1 <- lmList(Orthodont)
-fm2 <- lme(fm1)
-summary(fm1)
-summary(fm2)
-
-fm1 <- lme(y ~ 1 | group , random = ~ 1 , data = as.data.frame.data.frame(y = my.data$y))
-fm2 <- lme.lmList(y ~1, data = (y = my.data$y))
-?lme.lmList
-print()
-plot()
-
-
-# Trying to fit an lme and glmmTMB function ~ 1 ----------------------------
-
-?factor
-glm1 <- glmmTMB(y ~ 1, data = my.data)
-summary(glm1)
-plot(glm1)
-
-n=10000
-
-times <- factor(1:n, levels = 1:n)
-levels(times)
-
-group <- factor(rep(1,n))
-dat0 <- data.frame(y, times, group)
-dat1 <- data.frame(my.data, times, group)
-
-glm1 <- glmmTMB(y ~ ar1(times + 0 | group), data = dat0)
-glm2 <- glmmTMB(y ~ ar1(times + 0 | group), data = dat1)
-summary(glm1)
-summary(glm2)
-plot(glm1)
-plot(glm2)
-glm1
-glm2
-
-
-# Copy and paste try ------------------------------------------------------
-
-simGroup <- function(g, n=6, rho=0.7) {
-  x <- mvrnorm(mu = rep(0,n),
-               Sigma = rho ^ as.matrix(dist(1:n)) )   ## Simulate the process
-  y <- x + rnorm(n)                               ## Add measurement noise
-  times <- factor(1:n)
-  group <- factor(rep(g,n))
-  data.frame(y, times, group)
-}
-simGroup(1)
-
-dat1 <- do.call("rbind", lapply(1:1000, simGroup) )
-fit.ar1 <- glmmTMB(y ~ ar1(times + 0 | group), data=dat1)
-summary(fit.ar1)
-
-fit.us <- glmmTMB(y ~ us(times + 0 | group), data=dat1, dispformula=~0)
-fit.us$sdr$pdHess ## Converged ?
-VarCorr(fit.us)
-
-fit.toep <- glmmTMB(y ~ toep(times + 0 | group), data=dat1, dispformula=~0)
-fit.toep$sdr$pdHess ## Converged ?
-vc.toep <- VarCorr(fit.toep)
-
-vc1 <- vc.toep$cond[[1]] ## first term of var-cov for RE of conditional model
-summary(diag(vc1))
-summary(vc1[row(vc1)!=col(vc1)])
-
-fit.toep.reml <- update(fit.toep, REML=TRUE)
-vc1R <- VarCorr(fit.toep.reml)$cond[[1]]
-summary(diag(vc1R))
-summary(vc1R[row(vc1R)!=col(vc1R)])
-
-
-fit.gau <- glmmTMB(y ~ gau(times + 0 | group), data = dat1, dispformula=~0)
-fit.gau$sdr$pdHess ## Converged
-
-
-
-
-
-
-
-
-
-
-
-fit1 <- lme(y ~ 1 , data = data.frame(y = y))
-fit2 <- lme(y ~ 1., data=data.frame(y=my.data$y))
-# (das ist auch noch nicht ganz richtig, du musst jetzt noch in lme die spatial structure angeben, 
-# soweit ich es im Kopf habe geht das mit dem correlation = ... parameter, schau dir die Hilfe an, da ist ne Liste mit verfügbaren correlation structures) 
-
-
-
-fit.m <- (as.matrix(as.mcmc(fit)))
-fit.m
-
-fit.d <- as.data.frame(fit.m)
-fit.d
-
-fit1 <- lme(fit.m ~ 1, data = fit.m)
-fit1 <- lme(fit.d ~ 1, data = fit.d)
-fit1 <- lme(global.mu ~ 1, data = fit.d)
-summary(fit1)
-plot(fit1)
-
-
-
-
-
-# Fitte die Daten mal testweise an mit nlme und glmmTMB und schau ob du die Packages den Parameter korrekt fitten 
-# (sollte eigentlich easy funktionieren, einfach resp ~ 1, da wir ja im Moment noch keinen Prediktor haben, 
-# aber du kannst natürlich einen einbauen, aber dann musst du ihn auch in a) einbauen)
-
-#  fitx <- as.character(fit)
-#  fit1 <- as.vector(as.matrix(fit))
-#  resultswithglm <- jags(modelCode, monitor=c('lambda','global.mu'), modules='lme')
-#  resultswithglm(fit)
-
-#   install.packages("base")
-#   library(base)
-#   ??lappy
-#   base::lapply(fit.m)
-#   lapply(list, function)
-
-
+lambda.result
 
 
