@@ -232,8 +232,8 @@ lm3
 # <____________ summary(lm3)$intervals
 # <____________ log(0.2)
 range <- coef(gls$modelStruct$corStruct, unconstrained = F)
-lambda = 1 /range           # r = range # ich depp .... 
-d <- lambda
+l = 1 /range           # r = range # ich depp .... 
+d <- l
 gls.lambda <- exp(-range*D)
 gls.lambda
 
@@ -365,36 +365,35 @@ result_optim
 
 
 # Loop__In__Loop_Structure with lambda ------------------------------------
+# <____________ lambda
+# <____________ h = 0
 
-lambda
-vector.l <- matrix(NA,10,1)
-
-for(i in 1:10){             
-  {vector.l = lambda = (0.2 + 0.1*i) 
-  }
-  vector.l[i, 1] = vector.l}
-vector.l
-
-w <- c(1,2,3)
-for(count in 0.2:1.6)
-{w*2}
-
-w <- counter(1, 10)
-w
-?rep
-
-
-
-
-
-result_lambda = matrix(NA, 10, 3)
-for(i in 1:10){
-  time_lambda = 
+lambda.result = matrix(NA,50,2)
+for (h in 1:50){
+  time_glmmTMB = 
     system.time({
+      lambda[h] =0.15+h*0.05
+      l.r <- lambda[h]
+      #  n.lambda = ceiling(lambda[h])
+    })
+  lambda.result[h, 1] <- lambda[h]
+  lambda.result[h, 2] <- l.r
+}
+
+lambda.result
+
+
+# Loop__in__Loop_Combination__Model ---------------------------------------
+
+
+lambda.result = matrix(NA,5,11)
+for (h in 1:5){
+  time_glmmTMB = 
+    system.time({
+      lambda[h] =0.15+h*0.05
+      l.r <- lambda[h]
       
-      
-      result_glmmTMB = matrix(NA, 10, 3)
-      for(i in 1:10){
+      for(i in 1:5){
         time_glmmTMB = 
           system.time({
             fit.exp <- glmmTMB(resp ~ 1 + exp(pos + 0 | group), data=data)
@@ -402,18 +401,46 @@ for(i in 1:10){
         result_glmmTMB[i, 1] = time_glmmTMB[3]                       # Time
         result_glmmTMB[i, 2] = exp(-fit.exp$fit$par[4])              #lambda/theta?
         result_glmmTMB[i, 3] = summary(fit.exp)$coefficients$cond[1] # Intercept
+        
       }
-      result_glmmTMB
-      
-      
-      
-      
+      for(i in 1:10){
+        time_gls = 
+          system.time({
+            gls <- gls(y ~ 1, correlation=corExp (form=~rows+cols), data = my.data)
+          })
+        result_gls[i, 1] = time_gls[3]                                            # Time
+        result_gls[i, 2] = 1/coef(gls$modelStruct$corStruct, unconstrained = F)   #lambda/theta?
+        result_gls[i, 3] = summary(gls)$coefficients                              # Intercept
+      }
+      for(i in 1:10){
+        time_optim = 
+          system.time({
+            ll = function(par) {
+              cov = (exp(-par[1]* my.data$D))
+              -mvtnorm::dmvnorm(my.data$y, mean = rep(par[2], 100), sigma = cov ,log = TRUE)
+            }
+            result <- optim(par = c(0.5,10),  fn = ll, gr = NULL, method = methods[1], hessian = FALSE)
+          })
+        result_optim[i, 1] = time_optim[3]        # Time
+        result_optim[i, 2] = result$value         # niedrigster Score...
+        result_optim[i, 3] = result$par[1]                          # Intercept
+      }
     })
-  result_glmmTMB[i, 1] = results_glmmTMB                       # glmmTMB
-  result_glmmTMB[i, 2] = results_gls                           # gls
-  result_glmmTMB[i, 3] = results_optim                        # optim
+  lambda.result[h, 1] <- lambda[h]
+  lambda.result[h, 2] <- l.r
+  
+  lambda.result[h, 3] <- time_glmmTMB[3] 
+  lambda.result[h, 4] <- exp(-fit.exp$fit$par[4])
+  lambda.result[h, 5] <- summary(fit.exp)$coefficients$cond[1]
+  
+  lambda.result[h, 6] <- time_gls[3]
+  lambda.result[h, 7] <- 1/coef(gls$modelStruct$corStruct, unconstrained = F)
+  lambda.result[h, 8] <- summary(gls)$coefficients
+  
+  lambda.result[h, 9]  <- time_optim[3]
+  lambda.result[h, 10] <- result$value 
+  lambda.result[h, 11] <- result$par[1]
+  
 }
 
-result_lambda
-
-2+2
+lambda.result
