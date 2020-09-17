@@ -78,7 +78,7 @@ library(mvtnorm)
 2+2
 ?rjags
 
-
+# change function
 dist.matrix <- function(side)
 {
   row.coords <- rep(1:side, times=side)
@@ -86,7 +86,7 @@ dist.matrix <- function(side)
   row.col <<- data.frame(row.coords, col.coords)
   D <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
   D <- as.matrix(D)
-  return(D)
+  return(D) # list(D=D, coords = row.col)
 }
 
 
@@ -100,7 +100,7 @@ cor.surface <- function(side, global.mu, lambda)
   # sampling from the multivariate normal distribution
   M <- matrix(nrow=side, ncol=side)
   M[] <- rmvnorm(1, mu, SIGMA)
-  return(M)
+  return(M) # list(...)
 }
 
 
@@ -272,19 +272,36 @@ str(my.data)
 data.1 <- data.frame(my.data$y)
 id = rep(letters[1:20],5)
 id
-lm1 <- lme(y ~ 1, random=~ 1 | id, correlation=corGaus(form=~1|id), data = my.data)
+lm1 <- lme(y ~ 1, random=~ 1 | id, correlation=corExp(form=~1|id), data = my.data)
 summary(lm1)
 plot(lm1)
+my.data$group = as.factor(rep(1, my.data$N))
 
-exp(-fit.exp$fit$par[3])
-exp(-fit.exp$fit$par[3])
-exp(-fit.exp$fit$par[3])
+lm2 <- lme(y ~ 1, random=~ 1 | group, correlation=corExp(form=~id+0|group), data = my.data)
+lm2 <- lme(y ~ 1, random=~ 1 | group , correlation=corExp(form=~id+0|group), data = my.data)
+
 
 #
 #
 #
 #
 
+length(my.data$y)
+dummy <- rep(1, 100) 
+spdata <- cbind(my.data$y, dummy) 
+lme1 <- lme(y ~ 1, data = my.data, random = ~ 1 | dummy, method = "ML") 
+summary(lme1)
+?lme
+lme2 <- update(lme1, correlation = corGaus(1, form = ~ dummy + 0), method = "ML")
+summary(lme2)
+
+
+
+#
+#
+#
+#
+#
 #  Eigene Likelihood Function MVN -----------------------------------------
 
 ?MVN
@@ -347,17 +364,23 @@ library(corpcor)
 
 
 ll = function(par) {
-  cov = solve(exp(-par[1]*my.data$y))
+  cov = (exp(-par[1]* my.data$D))
   -mvtnorm::dmvnorm(my.data$y, mean = rep(par[2], 100), sigma = cov,log = TRUE)
 }
 methods = c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN","Brent")
-result <- optim(par = c(0.5,10),  fn = ll, gr = NULL, method = methods[5], hessian = FALSE)
+result <- optim(par = c(0.5,10),  fn = ll, gr = NULL, method = methods[1], hessian = FALSE)
+result$par
 
 ?optim
 
+res = sapply(seq(0.05, 1, by = 0.01),function(i) ll(c(i, 0.0)))
+plot(1:96, res)
 
+ll(c(0.01, 0.0))
+ll(c(0.3, 0.0))
+ll(c(5.8, 0.0))
 
-
+cov = (exp(-5.8* my.data$D))
 
 # > y[1:N] ~ dmnorm(mu[], D.tau[,])
 #
