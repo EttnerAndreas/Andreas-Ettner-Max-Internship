@@ -38,9 +38,9 @@ for (h in 1:5){
             side = 4 + j
             s.r <- side
             
-           
+            {
             
-            dist.matrix <- as.data.frame(function(side)
+            dist.matrix <- (function(side)
             {
               row.coords <- rep(1:side, times=side)
               col.coords <- rep(1:side, each=side)
@@ -67,8 +67,7 @@ for (h in 1:5){
             
             y <- as.vector(as.matrix(M))
             my.data <- list(N = s.r * s.r, D = dist.matrix(side), y = y)
-            
-         
+            }
             
             
             
@@ -81,6 +80,12 @@ for (h in 1:5){
       
     })
 }
+
+
+?rmvnorm
+D
+
+
 side
 
 sigma
@@ -98,6 +103,18 @@ lambda.result
 
 
 
+
+
+res = data.frame(matrix(NA, 15, 1))
+counter = 1
+for(i in 1:5){
+  for(j in c("A", "B", "C")){
+    # do something
+    res[counter, 1] = i
+    res[counter, 2] = j
+    counter = counter+1
+  }
+}
 
 
 

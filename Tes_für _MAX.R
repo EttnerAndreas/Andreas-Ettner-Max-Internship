@@ -1,4 +1,147 @@
+
+repeat.experiment = data.frame(matrix(NA,500,12))
+colnames(repeat.experiment) = c("rep", "Lambda", "Side", "glmm_Time", "Lambda", "Intercept", "gls_Time", "Lambda", "Intercept", "optim_Time", "Lambda", "Intercept")
+
+
+dist.matrix <- function(side)
+{
+  row.coords <- rep(1:side, times=side)
+  col.coords <- rep(1:side, each=side)
+  row.col <- data.frame(row.coords, col.coords)
+  D <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
+  D <- as.matrix(D)
+  return(D)
+}
+
+cor.surface <- function(side, global.mu, lambda)
+{
+  D <- dist.matrix(side)
+  # scaling the distance matrix by the exponential decay
+  SIGMA <- exp(-lambda*D)
+  mu <- rep(global.mu, times=side*side)
+  # sampling from the multivariate normal distribution
+  M <- matrix(nrow=side, ncol=side)
+  M[] <- rmvnorm(1, mu, SIGMA)
+  return(M) # list(...)
+}
+
+M <- cor.surface(side = side, lambda = lambda, global.mu = global.mu)
+y <- as.vector(as.matrix(M))
+my.data <- list(N = side * side, D = dist.matrix(side), y = y)
+
+side= 10
+lambda = 0.2
+global.mu = 0
+
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+# new_data <- simulate(side = c(4,6,8,10,12,14,16,18,20,22,24,26,28,30) ~ 1)
+
+
+
+M <- cor.surface(side = side, lambda = lambda, global.mu = global.mu)
+y <- as.vector(as.matrix(M))
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+data = 0
+new.data = 0
+new.data <- list(side=side, lambda = lambda,N = side * side, D = dist.matrix(side), y = y)
+new.data$row     = row.coords <- rep(1:side, times=side)
+new.data$col     = col.coords <- rep(1:side, each=side)
+new.data$row.col = data.frame(new.data$row, new.data$col)
+new.data$N1      = side*side
+n= side*side
+# new.data1        = data.frame(resp = my.data$y)
+new.data$group   <- as.factor(rep(1, new.data$N))
+new.data$rows    <- new.data$row.col[,1]
+new.data$cols    <- new.data$row.col[,2]
+
+# data = data.frame(resp = my.data$y)
+new.data$pos    <- numFactor(new.data$col, new.data$row.col)
+new.data$group  <- factor(rep(1, new.data$N1))
+new.data$x1      <- new.data$row.col
+new.data$y1      <- new.data$col
+
+new.data 
+new.data1 
+
+# D1 <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE),
+# D <- as.matrix(D1),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 repeat.experiment = data.frame(matrix(NA,150,11))
+
+
+dist.matrix <- function(side)
+{
+  row.coords <- rep(1:side, times=side)
+  col.coords <- rep(1:side, each=side)
+  row.col <- data.frame(row.coords, col.coords)
+  D <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
+  D <- as.matrix(D)
+  return(D)
+}
+
+row <- row.coords <- rep(1:side, times=side)
+col <- col.coords <- rep(1:side, each=side)
+row.col <<- data.frame(row, col)
+D1 <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
+D <- as.matrix(D1)
+
+  #dist.matrix <- function(list(D=D, coords = row.col))
+  dist.matrix <- function(side)
+  {row.coords=row.coords
+  col.coords=col.coords
+  row.col=row.col
+  D=D
+  return(D)
+ }
+
+
+cor.surface <- function(side, global.mu, lambda)
+{
+  D <- dist.matrix(side)
+  # scaling the distance matrix by the exponential decay
+  SIGMA <- exp(-lambda*D)
+  mu <- rep(global.mu, times=side*side)
+  # sampling from the multivariate normal distribution
+  M <- matrix(nrow=side, ncol=side)
+  M[] <- rmvnorm(1, mu, SIGMA)
+  return(M) # list(...)
+}
+
+M <- cor.surface(side = side, lambda = lambda, global.mu = global.mu)
+y <- as.vector(as.matrix(M))
+my.data <- list(N = side * side, D = dist.matrix(side), y = y)
+
+side= 10
+lambda = 0.2
+global.mu = 0
+
 
 counter=1
 
@@ -15,7 +158,7 @@ for (g in 1:5 ){
             
             #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
             # Loop, ändere Lambda von lambda=0.2 in 0.05 Schritten bis Lambda=0.5
-            counter = 1
+
             for (j in 1:5){
               time_side = 
                 system.time({
@@ -23,52 +166,7 @@ for (g in 1:5 ){
                   s.r <- side
                   # Loop, ändere side von 4 in 2er schritten auf 20 (daten ergeben sich aus side*side )
                   #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-                  new_data = simulate(side=side, lambda=lambda)
                   
-                  # Hier werden die Daten neu generiert ( hier liegt das Problem, denke ich )
-                 # dist.matrix <- function(side)
-                 # {
-                 #   row.coords <- rep(1:side, times=side)
-                 #   col.coords <- rep(1:side, each=side)
-                 #   row.col <- data.frame(row.coords, col.coords)
-                 #   D <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
-                 #   D <- as.matrix(D)
-                 #   return(D)
-                 # }
-
-                  row <- row.coords <- rep(1:side, times=side)
-                  col <- col.coords <- rep(1:side, each=side)
-                  row.col <<- data.frame(row, col)
-                  D1 <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
-                  D <- as.matrix(D1)
-                  
-                #  #dist.matrix <- function(list(D=D, coords = row.col))
-                #  dist.matrix <- function(side)
-                #  {row.coords=row.coords
-                #  col.coords=col.coords
-                #  row.col=row.col
-                #  D=D
-                #  return(D)
-                #  }
-
-                  
-                  cor.surface <- function(side, global.mu, lambda)
-                  {
-                    D <- dist.matrix(side)
-                    # scaling the distance matrix by the exponential decay
-                    SIGMA <- exp(-lambda*D)
-                    mu <- rep(global.mu, times=side*side)
-                    # sampling from the multivariate normal distribution
-                    M <- matrix(nrow=side, ncol=side)
-                    M[] <- rmvnorm(1, mu, SIGMA)
-                    return(M) # list(...)
-                  }
-                  
-                  M <- cor.surface(side = side, lambda = lambda, global.mu = global.mu)
-                  y <- as.vector(as.matrix(M))
-                  my.data <- list(N = side * side, D = dist.matrix(side), y = y)
-                  #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
 
                # Zusatz Variablen für die 3 Modelle
                   n= side*side

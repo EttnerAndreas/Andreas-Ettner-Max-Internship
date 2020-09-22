@@ -81,7 +81,7 @@ col <- col.coords <- rep(1:side, each=side)
 row.col <<- data.frame(row, col)
 D1 <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
 D <- as.matrix(D1)
-?rep
+
 
 #dist.matrix <- function(list(D=D, coords = row.col))
 dist.matrix <- function(side)
@@ -221,7 +221,7 @@ fit.exp$fit$par#[3]
 lambda
 global.mu
 ?par
-
+side=10
 #
 #
 #
@@ -247,7 +247,7 @@ my.data$cols = row.col[,2]
 lm2 <- lme(y ~ 1, random=~ 1 | group, correlation=corExp(form= ~ rows + cols), data = my.data)
 lm3 <- gls(y ~ 1, correlation=corExp(form=~rows+cols), data = my.data)
 lm3
-
+View(my.data)
 # <____________ lm2
 # <____________ intervals(lm3)
 # <____________ summary(lm3)$intervals
@@ -377,7 +377,7 @@ ll(c(0.16, 0.0))
 # LOOP__GlmmTMB -----------------------------------------------------------
 
 result_glmmTMB = matrix(NA, 50, 3)
-for(i in 1:50){
+for(i in 1:20){
   time_glmmTMB = 
     system.time({
       fit.exp <- glmmTMB(resp ~ 1 + exp(pos + 0 | group), data=data)
@@ -393,7 +393,7 @@ result_glmmTMB
 # Loop__GLS ---------------------------------------------------------------
 
 result_gls = matrix(NA, 50, 3)
-for(i in 1:50){
+for(i in 1:20){
   time_gls = 
     system.time({
       gls <- gls(y ~ 1, correlation=corExp (form=~rows+cols), data = my.data)
@@ -414,7 +414,7 @@ result_gls
 
 
 result_optim = matrix(NA, 50, 3)
-for(i in 1:50){
+for(i in 1:20){
   time_optim = 
     system.time({
       ll = function(par) {
@@ -454,85 +454,11 @@ lambda.result
 # 25 rows, --> columns? --> 3 models * 3 Ergebnisse + lambda + site = 11 columns
 
 
-lambda.result = data.frame(matrix(NA,25,11))
-# colnames(lambda.result) = LETTERS[1:11]
-colnames(lambda.result) = c("Lambda", "Sides", "TIME(glmmTMB)", "LAMBDA(glmmTMB)", "INTERCEPT(glmmTMB)","TIME(gls)", "LAMBDA(gls)", "INTERCEPT(gls)", "TIME(optim)", "LAMBDA(optim)", "INTERCEPT(optim)")
-counter = 1
-for (h in 1:5){
-  time_glmmTMB = 
-    system.time({
-      lambda[h] =0.15+h*0.05
-      l.r <- lambda[h]
-      
-     
-    
-              for(i in 1:5){  
-                time_glmmTMB = 
-                  system.time({
-                    fit.exp <- glmmTMB(resp ~ 1 + exp(pos + 0 | group), data=data)
-                  })
-                result_glmmTMB[i, 1] = time_glmmTMB[3]                       # Time
-                result_glmmTMB[i, 2] = exp(-fit.exp$fit$par[4])              #lambda/theta?
-                result_glmmTMB[i, 3] = summary(fit.exp)$coefficients$cond[1] # Intercept
-                
-                time_gls = 
-                  system.time({
-          gls <- gls(y ~ 1, correlation=corExp (form=~rows+cols), data = my.data)
-                  })
-                result_gls[i, 1] = time_gls[3]                                            # Time
-                result_gls[i, 2] = 1/coef(gls$modelStruct$corStruct, unconstrained = F)   #lambda/theta?
-                result_gls[i, 3] = summary(gls)$coefficients                              # Intercept
-        
-                time_optim = 
-                  system.time({
-                    ll = function(par) {
-                      cov = (exp(-par[1]* my.data$D))
-                      -mvtnorm::dmvnorm(my.data$y, mean = rep(par[2], 100), sigma = cov ,log = TRUE)
-                    }
-                    result <- optim(par = c(0.5,10),  fn = ll, gr = NULL, method = methods[1], hessian = FALSE)
-                  })
-                result_optim[i, 1] = time_optim[3]        # Time
-                result_optim[i, 2] = result$value         # niedrigster Score...
-                result_optim[i, 3] = result$par[1]        # Intercept
-              }
-      
-      lambda.result[counter, 1] <- lambda[h]
-      lambda.result[counter, 2] <- l.r # sites?
-      
-      lambda.result[counter, 3] <- time_glmmTMB[3] 
-      lambda.result[counter, 4] <- exp(-fit.exp$fit$par[4])
-      lambda.result[counter, 5] <- summary(fit.exp)$coefficients$cond[1]
-      
-      lambda.result[counter, 6] <- time_gls[3]
-      lambda.result[counter, 7] <- 1/coef(gls$modelStruct$corStruct, unconstrained = F)
-      lambda.result[counter, 8] <- summary(gls)$coefficients
-      
-      lambda.result[counter, 9]  <- time_optim[3]
-      lambda.result[counter, 10] <- result$value 
-      lambda.result[counter, 11] <- result$par[1]
-      
-      counter = counter + 1
-    }
-      
-)}
-
-lambda.result
-
-
-
-saveRDS(...)
 
 
 
 
-res = data.frame(matrix(NA, 15, 1))
-counter = 1
-for(i in 1:5){
-  for(j in c("A", "B", "C")){
-    # do something
-    res[counter, 1] = i
-    res[counter, 2] = j
-    counter = counter+1
-  }
-}
+
+
+
 

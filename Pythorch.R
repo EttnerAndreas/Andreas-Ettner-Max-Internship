@@ -15,12 +15,21 @@ summary(lm(Y~X))
 XT = torch$tensor(X, dtype=torch$float32)   # constant
 YT = torch$tensor(Y, dtype = torch$float32) # constant
 
+# 1. Data -> Tensors// umgeschrieben
+XT = torch$tensor(X, dtype=torch$float32)   # constant
+YT = torch$tensor(Y, dtype = torch$float32) # constant
+
+
+
 ## 1.2. Define parameters
 Beta = torch$tensor(0.0001, dtype=torch$float32, requires_grad=TRUE) # variable (-> lambda? mu?)
+lambda = torch$tensor(0.0001, dtype=torch$float32, requires_grad=TRUE)
+mu = torch$tensor(0.0001, dtype=torch$float32, requires_grad=TRUE)
 
 # 2. Set optimizer:
 optimizer = torch$optim$Adamax( params = list(Beta), lr = 0.1 )
-
+optimizer = torch$optim$Adamax( params = list(lambda), lr = 0.1 )
+optimizer = torch$optim$Adamax( params = list(mu), lr = 0.1 )
 
 # 3. Train loop:
 for(i in 1:100){
@@ -37,10 +46,13 @@ for(i in 1:100){
   optimizer$step()
   
   print(Beta)
-  
 }
-
 Beta
+
+
+
+
 
 # back to R:
 RBeta = Beta$data$cpu()$numpy()
+
