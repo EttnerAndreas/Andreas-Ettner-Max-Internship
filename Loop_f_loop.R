@@ -1,12 +1,12 @@
 
 counter=1
 
-for (g in 1:5 ){
+for (g in 1:1 ){
   time_repeat = 
     system.time({
       #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       # Loop, wiederhole Experiment 5 mal für die Statistik
-      for (h in 1:10 ){
+      for (h in 1:2 ){
         time_glmmTMB = 
           system.time({
             lambda = 0 + (h*0.2)
@@ -15,7 +15,7 @@ for (g in 1:5 ){
             #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
             # Loop, ändere Lambda von lambda=0.2 in 0.05 Schritten bis Lambda=0.5
             
-            for (j in 1:10){
+            for (j in 1:2){
               time_side = 
                 system.time({
                   side = 2+ 2*j
@@ -45,7 +45,7 @@ for (g in 1:5 ){
                   new.data1$x      <- new.data$row.col
                   new.data1$y      <- new.data$col
                   #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-                  for(i in 1:5){
+                  for(i in 1:1){
                     data
                     time_glmmTMB = 
                       system.time({
@@ -99,7 +99,52 @@ for (g in 1:5 ){
     )}
 
 repeat.experiment
+
 saveRDS(repeat.experiment, file = "loop2")
 counter=1
+
+
+
+
+
+updata.data <- function
+{
+  new.data <- list(side=side, lambda = lambda,N = side * side, D = dist.matrix(side), y = y)
+  new.data$row     <- row.coords <- rep(1:side, times=side)
+  new.data$col     <- col.coords <- rep(1:side, each=side)
+  new.data$row.col <- data.frame(new.data$row, new.data$col)
+  new.data$N       <- side*side
+  new.data$group   <- as.factor(rep(1, new.data$N))
+  new.data$rows    <- new.data$row.col[,1]
+  new.data$cols    <- new.data$row.col[,2]
+  return(new.data)
+}
+
+new.data <- list(side=side, lambda = lambda,N = side * side, D = dist.matrix(side), y = y)
+new.data$row     = row.coords <- rep(1:side, times=side)
+new.data$col     = col.coords <- rep(1:side, each=side)
+new.data$row.col = data.frame(new.data$row, new.data$col)
+new.data$N      = side*side
+n= side*side
+# new.data1        = data.frame(resp = my.data$y)
+new.data$group   <- as.factor(rep(1, new.data$N))
+new.data$rows    <- new.data$row.col[,1]
+new.data$cols    <- new.data$row.col[,2]
+
+new.data1 = data.frame(resp = new.data$y)
+new.data1$pos    <- numFactor(new.data$col, new.data$row.col)
+new.data1$group  <- factor(rep(1, new.data$N))
+new.data1$x      <- new.data$row.col
+new.data1$y      <- new.data$col
+
+
+
+
+
+
+
+
+
+
 
 

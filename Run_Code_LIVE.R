@@ -27,7 +27,7 @@ install.packages("corpcor")
 # Start RUN_CODE ----------------------------------------------------------
 
 
-
+library(Metrics)
 library(corpcor)
 library(nlme)
 library(MVN)
@@ -455,6 +455,147 @@ lambda.result
 
 
 
+repeat.experiment = data.frame(matrix(NA,500,12))
+colnames(repeat.experiment) = c("rep", "Lambda", "Side", "glmm_Time", "glmm_Lambda", "glmm_Intercept", "gls_Time", "gls_Lambda", "gls_Intercept", "optim_Time", "optim_Lambda", "optim_Intercept")
+
+
+counter=1
+
+for (g in 1:5 ){
+  time_repeat = 
+    system.time({
+      #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      # Loop, wiederhole Experiment 5 mal für die Statistik
+      for (h in 1:10 ){
+        time_glmmTMB = 
+          system.time({
+            lambda = 0 + (h*0.2)
+            l.r <- lambda
+            
+            #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            # Loop, ändere Lambda von lambda=0.2 in 0.05 Schritten bis Lambda=0.5
+            
+            for (j in 1:10){
+              time_side = 
+                system.time({
+                  side = 2+ 2*j
+                  s.r <- side
+                  # Loop, ändere side von 4 in 2er schritten auf 20 (daten ergeben sich aus side*side )
+                  #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                  D <- cor.surface(side = side, lambda = lambda, global.mu = global.mu)
+                  M <- cor.surface(side = side, lambda = lambda, global.mu = global.mu)
+                  y <- as.vector(as.matrix(M))
+                  #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                  new.data1 = 0
+                  new.data = 0
+                  new.data <- list(side=side, lambda = lambda,N = side * side, D = dist.matrix(side), y = y)
+                  new.data$row     = row.coords <- rep(1:side, times=side)
+                  new.data$col     = col.coords <- rep(1:side, each=side)
+                  new.data$row.col = data.frame(new.data$row, new.data$col)
+                  new.data$N      = side*side
+                  n= side*side
+                  # new.data1        = data.frame(resp = my.data$y)
+                  new.data$group   <- as.factor(rep(1, new.data$N))
+                  new.data$rows    <- new.data$row.col[,1]
+                  new.data$cols    <- new.data$row.col[,2]
+                  
+                  new.data1 = data.frame(resp = new.data$y)
+                  new.data1$pos    <- numFactor(new.data$col, new.data$row.col)
+                  new.data1$group  <- factor(rep(1, new.data$N))
+                  new.data1$x      <- new.data$row.col
+                  new.data1$y      <- new.data$col
+                  #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                  for(i in 1:25){
+                    data
+                    time_glmmTMB = 
+                      system.time({
+                        fit.exp <- glmmTMB(resp ~ 1 + exp(pos + 0 | group), data = new.data1)
+                      })
+                    
+                    time_gls = 
+                      system.time({
+                        gls <- gls(y ~ 1, correlation=corExp (form =~ rows + cols), data = new.data)
+                      })
+                    
+                    time_optim = 
+                      system.time({
+                        ll = function(par) {
+                          cov = (exp(-par[1]* new.data$D))
+                          -mvtnorm::dmvnorm(new.data1$y, mean = rep(par[2], side*side), sigma = cov ,log = TRUE)
+                        }
+                        result <- optim(par = c(0.5,10),  fn = ll, gr = NULL, method = methods[1], hessian = FALSE)
+                      })
+                  }
+                  repeat.experiment[counter, 1] <- g
+                  repeat.experiment[counter, 2] <- lambda
+                  repeat.experiment[counter, 3] <- s.r 
+                  
+                  repeat.experiment[counter, 4] <- time_glmmTMB[3] 
+                  repeat.experiment[counter, 5] <- exp(-fit.exp$fit$par[4])
+                  repeat.experiment[counter, 6] <- summary(fit.exp)$coefficients$cond[1]
+                  
+                  repeat.experiment[counter, 7] <- time_gls[3]
+                  repeat.experiment[counter, 8] <- 1/coef(gls$modelStruct$corStruct, unconstrained = F)
+                  repeat.experiment[counter, 9] <- summary(gls)$coefficients
+                  
+                  repeat.experiment[counter, 10]  <- time_optim[3]
+                  repeat.experiment[counter, 11] <- result$value 
+                  repeat.experiment[counter, 12] <- result$par[1]
+                  
+                  counter = counter + 1
+                  
+                  #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                  
+                }
+                )} 
+            
+            lambda = 0.2 
+            #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          }
+          )}
+      
+      #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    }
+    )}
+
+repeat.experiment
+
+
+# Einzelfunktionen könnten als 1 Funtion verbunden werden
+
+# Plot(s) und neue RMSE FUNKTION --------------------------------------------------
+
+#   RMSE zwischen dem wahren und dem estimated lambda
+
+rmse(repeat.experiment$Lambda , repeat.experiment$glmm_Lambda)
+rmse(repeat.experiment$Lambda , repeat.experiment$gls_Lambda)
+rmse(repeat.experiment$Lambda , repeat.experiment$optim_Lambda)
+
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+#rmse(loop$Lambda==0.2 , repeat.experiment$glmm_Lambda)
+#lam.0.2 <- subset(loop, loop$Lambda== "0.2")
+#lam.0.2 
+
+lam0.2 <- (rmse(loop$Lambda[c(1:10, 101:110, 201:210, 301:310, 401:410 )], repeat.experiment$glmm_Lambda[c(1:10, 101:110, 201:210, 301:310, 401:410 )]))
+lam0.4 <- (rmse(loop$Lambda[c(11:20, 111:120, 211:220, 311:320, 411:420 )], repeat.experiment$glmm_Lambda[c(11:20, 111:120, 211:220, 311:320, 411:420 )]))
+lam0.6 <- (rmse(loop$Lambda[c(21:30, 121:130, 221:230, 321:330, 421:430 )], repeat.experiment$glmm_Lambda[c(21:30, 121:130, 221:230, 321:330, 421:430 )]))
+lam0.8 <- (rmse(loop$Lambda[c(31:40, 131:140, 231:240, 331:340, 431:440 )], repeat.experiment$glmm_Lambda[c(31:40, 131:140, 231:240, 331:340, 431:440 )]))
+lam1.0 <- (rmse(loop$Lambda[c(41:50, 141:150, 241:250, 341:350, 441:450 )], repeat.experiment$glmm_Lambda[c(41:50, 141:150, 241:250, 341:350, 441:450 )]))
+lam1.2 <- (rmse(loop$Lambda[c(51:60, 151:160, 251:260, 351:360, 451:460 )], repeat.experiment$glmm_Lambda[c(51:60, 151:160, 251:260, 351:360, 451:460 )]))
+lam1.4 <- (rmse(loop$Lambda[c(61:70, 161:170, 261:270, 361:370, 461:470 )], repeat.experiment$glmm_Lambda[c(61:70, 161:170, 261:270, 361:370, 461:470 )]))
+lam1.6 <- (rmse(loop$Lambda[c(71:80, 171:180, 271:280, 371:380, 471:480 )], repeat.experiment$glmm_Lambda[c(71:80, 171:180, 271:280, 371:380, 471:480 )]))
+lam1.8 <- (rmse(loop$Lambda[c(81:90, 181:190, 281:290, 381:390, 481:490 )], repeat.experiment$glmm_Lambda[c(81:90, 181:190, 281:290, 381:390, 481:490 )]))
+lam2.0 <- (rmse(loop$Lambda[c(91:100, 191:200, 291:300, 391:400, 491:500 )], repeat.experiment$glmm_Lambda[c(91:100, 191:200, 291:300, 391:400, 491:500 )]))
+
+data <- as.matrix(c(lam0.2, lam0.4, lam0.6, lam0.8, lam1.0, lam1.2, lam1.4, lam1.6, lam1.8, lam2.0))
+data
+lambda_plot <- as.matrix(c("lamda0.2", "lamda0.4", "lamda0.6","lamda0.8", "lamda1.0", "lamda1.2", "lamda1.4", "lamda1.6", "lamda1.8", "lamda2.0"))
+lambda_plot1 <- as.matrix(c(0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0))
+
+lambda_plot1
+plot(data ~ lambda_plot1 ,xlim = c("lamda0.2", "lamda0.4", "lamda0.6","lamda0.8", "lamda1.0", "lamda1.2", "lamda1.4", "lamda1.6", "lamda1.8", "lamda2.0")) 
+plot(data ~ lambda_plot1 ,xlim = c(0.2,2.0),ylab= "rmse true lambda  vs  estimated L", xlab = "lambda 0.2 bis 2.0", par(bg="white",fg="red",pch=16) )
 
 
 
