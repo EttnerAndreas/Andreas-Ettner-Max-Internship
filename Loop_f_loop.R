@@ -23,6 +23,11 @@ side = 10
 global.mu = 0
 lambda = 0.2 
 
+repeat.experiment <- data.frame(matrix(NA,500,12))
+#repeat.experiment = data.frame(matrix(NA,500,12))
+colnames(repeat.experiment) = c("rep", "Lambda", "Side", "glmm_Time", "glmm_Lambda", "glmm_Intercept", "gls_Time", "gls_Lambda", "gls_Intercept", "optim_Time", "optim_Lambda", "optim_Intercept")
+
+
 
 dist.matrix <- function(side)
 {
@@ -56,6 +61,20 @@ cor.surface <- function(side, global.mu, lambda)
   return(M) # list(...)
 }
 
+row <- row.coords <- rep(1:side, times=side)
+col <- col.coords <- rep(1:side, each=side)
+row.col <<- data.frame(row, col)
+D1 <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
+D <- as.matrix(D1)
+dist.matrix <- function(side)
+{
+  row.coords=row.coords
+  col.coords=col.coords
+  row.col=row.col
+  D=D
+  return(D)
+}
+
 side=10
 global.mu = 0
 lambda = 0.2 
@@ -64,9 +83,17 @@ M <- cor.surface(side = side, lambda = lambda, global.mu = global.mu)
 jag1 <- as.vector(as.matrix(M))
 my.data <- list(N = side * side, D = dist.matrix(side), y = jag1)
 
+repeat.experiment <- data.frame(matrix(NA,500,12))
+repeat.experiment = data.frame(matrix(NA,500,12)
+                               )
+colnames(repeat.experiment) = c("rep", "Lambda", "Side", "glmm_Time", "glmm_Lambda", "glmm_Intercept", "gls_Time", "gls_Lambda", "gls_Intercept", "optim_Time", "optim_Lambda", "optim_Intercept")
+
+
+
+
+
 
 counter=1
-
 for (g in 1:5 ){
   time_repeat = 
     system.time({
@@ -108,7 +135,9 @@ for (g in 1:5 ){
                   new.data1$pos    <- numFactor(new.data$col, new.data$row.col)
                   new.data1$group  <- factor(rep(1, new.data$N))
                   new.data1$x      <- new.data$row.col
-                  new.data1$y      <- new.data$col
+                  #new.data1$y      <- new.data$col
+                  new.data1$y      <- new.data$row.col
+                  
                   #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                   for(i in 1:50){
                     data
@@ -162,12 +191,8 @@ for (g in 1:5 ){
     )}
 
 repeat.experiment
-
 saveRDS(repeat.experiment, file = "loop3")
 counter=1
-
-
-
 
 
 
