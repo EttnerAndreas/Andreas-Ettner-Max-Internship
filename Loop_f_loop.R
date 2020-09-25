@@ -61,7 +61,7 @@ cor.surface <- function(side, global.mu, lambda)
   return(M) # list(...)
 }
 
-
+set.seed=226
 
 counter=1
 for (g in 1:15 ){
@@ -78,7 +78,7 @@ for (g in 1:15 ){
             #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
             # Loop, ändere Lambda von lambda=0.2 in 0.05 Schritten bis Lambda=0.5
             
-            for (j in 1:10){
+            for (j in 4:13){
               time_side = 
                 system.time({
                   side = 2+ 2*j
@@ -95,7 +95,7 @@ for (g in 1:15 ){
                     D <- dist.matrix(side)
                     M <- cor.surface(side = side, lambda = lambda, global.mu = global.mu)
                     y <- as.vector(as.matrix(M))
-                    #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                  #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                     new.data1 = 0
                     new.data = 0
                     new.data <- list(side=side, lambda = lambda,N = side * side, D = dist.matrix(side), y = y)
@@ -108,7 +108,7 @@ for (g in 1:15 ){
                     new.data$group   <- as.factor(rep(1, new.data$N))
                     new.data$rows    <- new.data$row.col[,1]
                     new.data$cols    <- new.data$row.col[,2]
-                    new.data1 = data.frame(resp = new.data$y)
+                    new.data1        =  data.frame(resp = new.data$y)
                     new.data1$pos    <- numFactor(new.data$col, new.data$row.col)
                     new.data1$group  <- factor(rep(1, new.data$N))
                     new.data1$x      <- new.data$row
@@ -123,7 +123,14 @@ for (g in 1:15 ){
                     time_gls = 
                       system.time({
                         # gls <- gls(y ~ 1, correlation=corExp (form =~ rows + cols), data = new.data)
-                        gls <- lme(y ~ 1, random=~ 1 | group, correlation=corExp(form=~rows+cols), data = new.data)
+                        # gls <- lme(y ~ 1, random=~ 1 | group, correlation=corExp(form=~rows+cols), data = new.data)
+
+                        try({
+                          gls = gls(y ~ 1, correlation=corExp (form =~ rows + cols), data = new.data)
+                          repeat.experiment[counter, 7] <- time_gls[3]
+                          repeat.experiment[counter, 8] <- 1/coef(gls$modelStruct$corStruct, unconstrained = F)
+                          repeat.experiment[counter, 9] <- summary(gls)$coefficients
+                        }, silent=TRUE)
                       })
                     
                     time_optim = 
@@ -143,9 +150,9 @@ for (g in 1:15 ){
                   repeat.experiment[counter, 5] <- exp(-fit.exp$fit$par[4])
                   repeat.experiment[counter, 6] <- summary(fit.exp)$coefficients$cond[1]
                   
-                  repeat.experiment[counter, 7] <- time_gls[3]
-                  repeat.experiment[counter, 8] <- 1/coef(gls$modelStruct$corStruct, unconstrained = F)
-                  repeat.experiment[counter, 9] <- summary(gls)$coefficients$fixed
+                  #repeat.experiment[counter, 7] <- time_gls[3]
+                  #repeat.experiment[counter, 8] <- 1/coef(gls$modelStruct$corStruct, unconstrained = F)
+                  #repeat.experiment[counter, 9] <- summary(gls)$coefficients
                   
                   repeat.experiment[counter, 10] <- time_optim[3]
                   repeat.experiment[counter, 11] <- result$par[1] 
@@ -168,17 +175,9 @@ for (g in 1:15 ){
 )}
 
 repeat.experiment
+
 saveRDS(repeat.experiment, file = "loop4")
 counter=1
-
-
-
-
-
-
-
-
-
 
 
 
