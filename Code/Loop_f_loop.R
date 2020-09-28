@@ -21,6 +21,18 @@ library(mvtnorm)
 
 global.mu = 0
 methods = c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN","Brent")
+#row.coords <- rep(1:side, times=side)
+#col.coords <- rep(1:side, each=side)
+#row.col <- data.frame(row.coords, col.coords)
+#D <- dist(row.col, method="euclidean", diag=TRUE, upper=TRUE)
+#D <- as.matrix(D)
+#SIGMA <- exp(-lambda*D)
+#mu <- rep(global.mu, times=side*side)
+# sampling from the multivariate normal distribution
+#M <- matrix(nrow=side, ncol=side)
+#M[] <- rmvnorm(1, mu, SIGMA)
+
+
 
 repeat.experiment = data.frame(matrix(NA,1500,12))
 colnames(repeat.experiment) = c("rep", "Lambda", "Side", "glmm_Time", "glmm_Lambda", "glmm_Intercept", "gls_Time", "gls_Lambda", "gls_Intercept", "optim_Time", "optim_Lambda", "optim_Intercept")
@@ -164,7 +176,7 @@ for (g in 1:15 ){
 
 repeat.experiment
 
-saveRDS(repeat.experiment, file = "loop4")
+saveRDS(repeat.experiment, file = "loop5")
 counter=1
 
 

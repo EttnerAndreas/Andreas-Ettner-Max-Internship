@@ -181,7 +181,7 @@ pairs(as.matrix(as.mcmc(fit)))
 # glmmTMB time variable  --------------------------------------------------
 
 n= 100
-glm1 <- glmmTMB(my.data$y ~ ar1(times + 0 | group), data=dat0)
+glm1 <- glmmTMB(resp ~ ar1(times + 0 | group), data=new.data1)
 ?glmmTMB
 # Spatial correlations ----------------------------------------------------
 
@@ -208,13 +208,22 @@ fit.exp$fit$par#[3]
 lambda
 global.mu
 ?par
-
+side = 8
+side4 <- fit.exp
+side8 <- fit.exp
 #
 #
 #
+side4
+side8
+new.data1
 #
 #
-
+side= 18
+fit.exp <- glmmTMB(resp ~ 1 + exp(pos + 0 | group), data = new.data1)
+print(fit.exp)
+summary(fit.exp)
+18*18
 # 13.09 nmle --------------------------------------------------------------
 
 data.1 <- data.frame(my.data$y)
