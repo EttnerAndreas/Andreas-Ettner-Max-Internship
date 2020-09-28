@@ -3,6 +3,8 @@ library(reticulate)
 torch = import("torch")
 
 
+?reticulate
+
 X = dist.matrix(side)
 Y = side
 Z = lambda
