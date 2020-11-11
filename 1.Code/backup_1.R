@@ -79,7 +79,6 @@ return(D)
 }
 
 
-
 cor.surface <- function(side, global.mu, lambda)
 {
   D <- dist.matrix(side)
@@ -179,10 +178,6 @@ pairs(as.matrix(as.mcmc(fit)))
 # 13.09 glmmTMB -----------------------------------------------------------
 
 # glmmTMB time variable  --------------------------------------------------
-
-n= 100
-glm1 <- glmmTMB(resp ~ ar1(times + 0 | group), data=new.data1)
-?glmmTMB
 # Spatial correlations ----------------------------------------------------
 
 data = data.frame(resp=my.data$y)
@@ -194,29 +189,16 @@ data$y = col.coords
 
 fit.exp <- glmmTMB(resp ~ 1 + exp(pos + 0 | group), data=data)
 summary(fit.exp)
+
 ### Note:
 ### from the glmmTMB source:
 ### exp( -dist(i,j) * exp(-theta(1)) ) );
 ### which means that to get our lambda parametrization we have to calculate: exp(-theta)
-# <____________ res1 <- simulateResiduals(fit.exp)
-# <____________ plot(res1)
-# <____________ fit$par
 
 exp(-fit.exp$fit$par[4]) # original
 exp(-fit.exp$fit$par[3]) # auch theta
 fit.exp$fit$par#[3]
-lambda
-global.mu
-?par
-side = 8
-side4 <- fit.exp
-side8 <- fit.exp
-#
-#
-#
-side4
-side8
-new.data1
+
 #
 #
 side= 18
@@ -295,7 +277,83 @@ result$par[1]
 # <____________ cov
 
 
+##################################################################################
+#'
+#'
+##################################################################################
 
+#  glmmTMB -----------------------------------------------------------
+
+data = data.frame(resp=my.data$y)
+data$pos   <- numFactor(row.col, row.coords)
+data$group <- factor(rep(1, nrow(data)))
+data$x = row.coords
+data$y = col.coords
+
+
+
+
+fit.exp <- glmmTMB(resp ~ 1 + exp(pos + 0 | group), data=data)
+summary(fit.exp)
+
+### exp( -dist(i,j) * exp(-theta(1)) ) );
+### which means that to get our lambda parametrization we have to calculate: exp(-theta)
+
+exp(-fit.exp$fit$par[4])
+
+    
+    
+#  nmle4 / GLS--------------------------------------------------------------
+
+my.data$group = as.factor(rep(1, my.data$N))
+my.data$rows = row.col[,1]
+my.data$cols = row.col[,2]
+
+lm2 <- lme(y ~ 1, random=~ 1 | group, correlation=corExp(form=~rows+cols), data = my.data)
+lm3 <- gls(y ~ 1, correlation=corExp(form=~rows+cols), data = my.data)
+
+
+try({
+  
+  gls = gls(y ~ 1, correlation=corExp (form =~ rows + cols), data = new.data)
+
+}, silent=TRUE)
+
+
+range <- coef(gls$modelStruct$corStruct, unconstrained = F)
+l = 1 /range           # r = range 
+d <- l
+gls.lambda <- exp(-range*D)
+gls.lambda
+
+
+
+
+#  Eigene Likelihood Function MVN -----------------------------------------
+
+#y <- -mvtnorm::dmvnorm(my.data$y, mean = rep(par[2], 100), sigma = cov,log = TRUE) 
+methods = c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN","Brent")
+
+
+ll = function(par) { 
+  cov = (exp(-par[1]* new.data$D))
+  -mvtnorm::dmvnorm(new.data1$resp, mean = rep(par[2], side*side), sigma = cov ,log = TRUE)
+}
+
+result <- optim(par = c(0.5,10),  fn = ll, gr = NULL, method = methods[1], hessian = FALSE)
+result
+
+res = sapply(seq(0.05, 1, by = 0.01),function(i) ll(c(i, 0.0)))
+plot(1:96, res)
+result$par[1]
+
+min(res) # 88.61983 = 0.315 best score
+sapply(seq(0.05, 1, by = 0.01),function(i) ll(c(i, 0.0)))
+
+
+cov = (exp(-5.8* my.data$D))
+cov
+group
 
 
 #------- For Loop Strucutre, Jags, nmle, glmmTMB (50 times) ---------------
